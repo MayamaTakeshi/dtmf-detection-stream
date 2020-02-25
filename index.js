@@ -42,9 +42,9 @@ class DtmfDetectionStream extends Writable {
 	_slotToDigit(s) {
 		if(s < 10) {
 			return s + ''
-		} else if(s >=10 && s > 14) {
+		} else if(s >=10 && s < 14) {
 			return String.fromCharCode(65 - 10 + s)
-		} else if(s = 14) {
+		} else if(s == 14) {
 			return '*'
 		} else {
 			return '#'
@@ -52,7 +52,7 @@ class DtmfDetectionStream extends Writable {
 	}
 
 	_processSamples(data) {
-		console.log('_processSamples', data)
+		//console.log('_processSamples', data)
 		var buffer = new Float32Array(this.numSamples)
 
 		for(var i = 0 ; i<this.numSamples ; i++) {
@@ -72,7 +72,7 @@ class DtmfDetectionStream extends Writable {
 		//console.log(buffer)
 
 		var digits = this.dtmf.processBuffer(buffer)
-		console.log(digits)
+		//console.log(digits)
 
 		// report digits upon signal extinction
 		var slots = digits.map(digit => this._digitToSlot(digit))
@@ -102,14 +102,16 @@ class DtmfDetectionStream extends Writable {
 
 		var numBytes = this.numSamples * this.bytesPerSample
 
-		console.log(data.length, numBytes)
+		//console.log(data.length, numBytes)
 		if(data.length < numBytes) {
 			this.remains = data
 		} else if(data.length == numBytes) {
 			this._processSamples(data)
 		} else {
 			var blocks = Math.floor(data.length / numBytes)
-			console.log('blocks', blocks)
+			//console.log('blocks', blocks)
+			//console.log("data.length", data.length)
+			//console.log(blocks * numBytes)
 			for(var i=0 ; i<blocks ; i++) {
 				this._processSamples(data.slice(i*numBytes, i*numBytes+numBytes))
 			}
@@ -118,6 +120,8 @@ class DtmfDetectionStream extends Writable {
 				this.remains = data.slice(-remaining)
 			}
 		}
+
+		if(callback) callback(null)
 	}
 }
 

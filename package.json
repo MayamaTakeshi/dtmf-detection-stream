@@ -13,7 +13,7 @@
   "author": "MayamaTakeshi",
   "license": "MIT",
   "dependencies": {
-    "goertzeljs": "git+https://github.com/MayamaTakeshi/goertzeljs.git"
+    "goertzeljs": "^4.2.1"
   },
   "devDependencies": {
     "tone-stream": "^1.2.0"
