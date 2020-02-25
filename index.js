@@ -11,15 +11,20 @@ class DtmfDetectionStream extends Writable {
 
 		var dtmf_opts = {
 			sampleRate: format.sampleRate,
-			peakFilterSensitivity: 1.4,
+			//peakFilterSensitivity: 1.4,
+			peakFilterSensitivity: 0.5,
 			repeatMin: 0,
+			//downsampleRate: 1,
 			downsampleRate: 1,
-			threshold: 0.005,
+			threshold: 0.9,
 		}
 	
 		this.dtmf = new DTMF(dtmf_opts)
 
 		this.bytesPerSample = format.bitDepth ? format.bitDepth/8 : 2
+
+		this.float = format.float
+		this.signed = format.signed
 
 		if(opts) {
 			this.numSamples = opts.numSamples ? opts.numSamples : 320
@@ -79,10 +84,20 @@ class DtmfDetectionStream extends Writable {
 			if(this.bytesPerSample == 1) {
 				f = data[i]
 			} else if (this.bytesPerSample == 2) {
-				f = data.readInt16LE(i*2)
+				f = data.readInt16LE(i*this.bytesPerSample)
 				if(f != 0) {
 					var LIMIT = 0.9999999999999999
 					f = (LIMIT - -LIMIT)/(32767 - -32768)*(f - 32767)+LIMIT
+				}
+			} else if (this.bytesPerSample == 4) {
+				if(this.float) {
+					f = data.readFloatLE(i*this.bytesPerSample)
+				} else {
+					f = data.readInt32LE(i*this.bytesPerSample)
+					if(f != 0) {
+						var LIMIT = 0.9999999999999999
+						f = (LIMIT - -LIMIT)/(2147483647 - -2147483648)*(f - 2147483647)+LIMIT
+					}
 				}
 			} else {
 				throw "NOT SUPPORTED"
