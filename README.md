@@ -4,7 +4,7 @@ This is is simple node.js DTMF detection stream.
 
 ```
 const ToneStream = require('tone-stream')
-const DtmfDetectionStream = require('./index.js')
+const DtmfDetectionStream = require('dtmf-detection-stream')
 
 const format = {
 	sampleRate: 8000,
@@ -13,12 +13,14 @@ const format = {
 }
 
 const ts = new ToneStream(format)
-ts.add([250, 'DTMF:1'])
-ts.add([250, 'DTMF:2'])
-ts.add([250, 'DTMF:3'])
-ts.add([250, 0]) // silence
+ts.add([800, 'DTMF:1'])
+ts.add([800, 0]) // silence
+ts.add([800, 'DTMF:2'])
+ts.add([800, 0]) // silence
+ts.add([800, 'DTMF:3'])
+ts.add([800, 0]) // silence
 
-const dds = new DtmfDetectionStream(format, 160)
+const dds = new DtmfDetectionStream(format)
 
 dds.on('digit', digit => {
 	console.log('got digit', digit)
