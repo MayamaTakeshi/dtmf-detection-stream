@@ -1,0 +1,21 @@
+{
+  "name": "dtmf-detection-stream",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MayamaTakeshi/dtmf-detection-stream.git"
+  },
+  "scripts": {
+    "test": "mocha"
+  },
+  "author": "MayamaTakeshi",
+  "license": "MIT",
+  "dependencies": {
+    "goertzeljs": "git+https://github.com/MayamaTakeshi/goertzeljs.git"
+  },
+  "devDependencies": {
+    "tone-stream": "^1.2.0"
+  }
+}
