@@ -3,14 +3,29 @@ const { EventEmitter } = require('events')
 
 const DTMF = require('goertzeljs/lib/dtmf')
 
+//const createBuffer = require('audio-buffer-from')
+
 class DtmfDetectionStream extends Writable {
-	constructor(opts) {
+	constructor(format, opts) {
 		super(opts)
 
-		this.dtmf = new DTMF(opts)
+		var dtmf_opts = {
+			sampleRate: format.sampleRate,
+			peakFilterSensitivity: 1.4,
+			repeatMin: 0,
+			downsampleRate: 1,
+			threshold: 0.005,
+		}
+	
+		this.dtmf = new DTMF(dtmf_opts)
 
-		this.bytesPerSample = opts.bitDepth ? opts.bitDepth/8 : 2
-		this.numSamples = opts.numSamples ? opts.numSamples : 160
+		this.bytesPerSample = format.bitDepth ? format.bitDepth/8 : 2
+
+		if(opts) {
+			this.numSamples = opts.numSamples ? opts.numSamples : 320
+		} else {
+			this.numSamples = 320
+		}
 
 		this.remains = null
 
@@ -53,6 +68,10 @@ class DtmfDetectionStream extends Writable {
 
 	_processSamples(data) {
 		//console.log('_processSamples', data)
+
+		//var ab = createBuffer(data, 'int16 8000')
+		//console.log(ab)
+
 		var buffer = new Float32Array(this.numSamples)
 
 		for(var i = 0 ; i<this.numSamples ; i++) {
@@ -61,16 +80,18 @@ class DtmfDetectionStream extends Writable {
 				f = data[i]
 			} else if (this.bytesPerSample == 2) {
 				f = data.readInt16LE(i*2)
-				var LIMIT = 0.9999999999999999
-				f = (LIMIT - -LIMIT)/(32767 - -32768)*(f - 32767)+LIMIT
+				if(f != 0) {
+					var LIMIT = 0.9999999999999999
+					f = (LIMIT - -LIMIT)/(32767 - -32768)*(f - 32767)+LIMIT
+				}
 			} else {
 				throw "NOT SUPPORTED"
 			}
 			buffer[i] = f
 		}
-
+		
 		//console.log(buffer)
-
+		//var digits = this.dtmf.processBuffer(ab.getChannelData(0))
 		var digits = this.dtmf.processBuffer(buffer)
 		//console.log(digits)
 

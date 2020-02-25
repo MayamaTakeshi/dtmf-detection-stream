@@ -7,26 +7,24 @@ const format = {
 	channels: 1,
 }
 
-const ts = new ToneStream(format)
-ts.add([250, 'DTMF:0'])
-ts.add([250, 'DTMF:1'])
-ts.add([250, 'DTMF:2'])
-ts.add([250, 'DTMF:3'])
-ts.add([250, 'DTMF:4'])
-ts.add([250, 'DTMF:5'])
-ts.add([250, 'DTMF:6'])
-ts.add([250, 'DTMF:7'])
-ts.add([250, 'DTMF:8'])
-ts.add([250, 'DTMF:9'])
-ts.add([250, 'DTMF:A'])
-ts.add([250, 'DTMF:B'])
-ts.add([250, 'DTMF:C'])
-ts.add([250, 'DTMF:D'])
-ts.add([250, 'DTMF:*'])
-ts.add([250, 'DTMF:#'])
-ts.add([250, 'DTMF:0'])
+var digits = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 'A', 'B', 'C', 'D', '*', '#']
 
-const dds = new DtmfDetectionStream(format, 160)
+const ts = new ToneStream(format)
+
+ts.add([800, `DTMF:${digits.shift()}`])
+ts.add([800, 0])
+
+ts.on('empty', () => {
+	var digit = digits.shift()
+	if(!digit) {
+		return
+	}
+
+	ts.add([800, `DTMF:${digit}`])
+	ts.add([800, 0])
+})
+
+const dds = new DtmfDetectionStream(format, {numSamples: 800})
 
 dds.on('digit', digit => {
 	console.log('got digit', digit)

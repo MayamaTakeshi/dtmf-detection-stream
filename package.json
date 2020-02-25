@@ -1,6 +1,6 @@
 {
   "name": "dtmf-detection-stream",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "",
   "main": "index.js",
   "repository": {
@@ -16,6 +16,7 @@
     "goertzeljs": "^4.2.1"
   },
   "devDependencies": {
+    "speaker": "^0.5.1",
     "tone-stream": "^1.2.0"
   }
 }
