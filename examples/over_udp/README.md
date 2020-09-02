@@ -1,6 +1,6 @@
 ### DTMD detection on data sent over UDP
 
-To test.
+To test it:
 
 Start the UDP receiver like this:
 ```
