@@ -6,17 +6,17 @@ const DTMF = require('goertzeljs/lib/dtmf')
 //const createBuffer = require('audio-buffer-from')
 
 class DtmfDetectionStream extends Writable {
-	constructor(format, opts) {
+	constructor(format, opts, dtmf_opts) {
 		super(opts)
 
-		var dtmf_opts = {
-			sampleRate: format.sampleRate,
-			//peakFilterSensitivity: 1.4,
-			peakFilterSensitivity: 0.5,
-			repeatMin: 0,
-			//downsampleRate: 1,
-			downsampleRate: 1,
-			threshold: 0.9,
+		if (!dtmf_opts) {
+			dtmf_opts = {
+				sampleRate: format.sampleRate,
+				peakFilterSensitivity: 0.5,
+				repeatMin: 0,
+				downsampleRate: 1,
+				threshold: 0.9,
+			}
 		}
 	
 		this.dtmf = new DTMF(dtmf_opts)

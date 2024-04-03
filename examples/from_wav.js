@@ -26,7 +26,16 @@ file.pipe(reader)
 
 reader.on('format', format => {
 	console.log('format:', format)
-	const dds = new DtmfDetectionStream(format)
+
+	const dtmf_opts = {
+		sampleRate: format.sampleRate,
+		peakFilterSensitivity: 0.5,
+		repeatMin: 1,
+		downsampleRate: 1,
+		threshold: 0.9,
+	}
+
+	const dds = new DtmfDetectionStream(format, null, dtmf_opts)
 
 	dds.on('digit', digit => {
 		console.log('got digit', digit)
