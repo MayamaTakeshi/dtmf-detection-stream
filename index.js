@@ -26,9 +26,10 @@ class DtmfDetectionStream extends Writable {
 	    this.GOERTZEL_N = 490; //
 	    this.SAMPLING_RATE = 48000;
         } else {
-	   throw "Unsupported sample rate"
+	   throw("Unsupported sample rate")
 	}
 
+	this.channels = format.channels
 
         this.freqs = [697, 770, 852, 941, 1209, 1336, 1477, 1633];
         this.coefs = new Array(8).fill(0);
@@ -168,9 +169,20 @@ class DtmfDetectionStream extends Writable {
 
     _write(chunk, encoding, callback) {
         //console.log("Processing chunk...", chunk);
-        const samples = new Int16Array(chunk.buffer);
 
-        for (const sample of samples) {
+        let samples = new Int16Array(chunk.buffer);
+        let channel1Samples = [];
+        if(this.channels == 1) {
+		channel1Samples = samples
+	} else {
+            // Iterate over the interleaved samples and extract samples from channel 1
+	    var channel1Index = 0
+            for (let i = channel1Index; i < samples.length; i += this.channels) {
+                channel1Samples.push(samples[i]);
+            }
+	}
+
+        for (const sample of channel1Samples) {
             this.goertzel(sample);
         }
 
