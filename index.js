@@ -8,14 +8,27 @@ class DtmfDetectionStream extends Writable {
         super(opts);
         this.MAX_BINS = 8;
 
-        if (format.sampleRate == 16000) {
-            this.GOERTZEL_N = 210;
-            this.SAMPLING_RATE = 16000;
-        } else {
+        if (format.sampleRate == 8000) {
             // 8kHz default
             this.GOERTZEL_N = 92;
             this.SAMPLING_RATE = 8000;
-        }
+        } else if (format.sampleRate == 16000) {
+            this.GOERTZEL_N = 210; // original value but misses first digit from examples/artifacts/digits.1234.16000hz.wav
+            this.SAMPLING_RATE = 16000;
+	} else if (format.sampleRate == 32000) {
+	    this.GOERTZEL_N = 332; // trial and error against examples/artifacts/digits.1234.32000hz.wav
+	    this.SAMPLING_RATE = 32100;
+	} else if (format.sampleRate == 44100) {
+	    this.GOERTZEL_N = 440; // trial and error against examples/artifacts/digits.1234.44100hz.wav
+	    this.SAMPLING_RATE = 44100;
+	} else if (format.sampleRate == 48000) {
+	    //this.GOERTZEL_N = 460; // trial and error against examples/artifacts/digits.1234.48000hz.wav
+	    this.GOERTZEL_N = 490; //
+	    this.SAMPLING_RATE = 48000;
+        } else {
+	   throw "Unsupported sample rate"
+	}
+
 
         this.freqs = [697, 770, 852, 941, 1209, 1336, 1477, 1633];
         this.coefs = new Array(8).fill(0);
