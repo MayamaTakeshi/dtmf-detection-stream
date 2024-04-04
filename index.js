@@ -1,165 +1,179 @@
-const { Writable } = require('stream')
-const { EventEmitter } = require('events')
+const { Writable } = require('stream');
+const { EventEmitter } = require('events');
 
-const DTMF = require('goertzeljs/lib/dtmf')
-
-//const createBuffer = require('audio-buffer-from')
+const MINIMAL_COUNT = 2
 
 class DtmfDetectionStream extends Writable {
-	constructor(format, opts, dtmf_opts) {
-		super(opts)
+    constructor(format, opts) {
+        super(opts);
+        this.MAX_BINS = 8;
 
-		if (!dtmf_opts) {
-			dtmf_opts = {
-				sampleRate: format.sampleRate,
-				peakFilterSensitivity: 0.5,
-				repeatMin: 0,
-				downsampleRate: 1,
-				threshold: 0.9,
-			}
-		}
-	
-		this.dtmf = new DTMF(dtmf_opts)
+        if (format.sampleRate == 16000) {
+            this.GOERTZEL_N = 210;
+            this.SAMPLING_RATE = 16000;
+        } else {
+            // 8kHz default
+            this.GOERTZEL_N = 92;
+            this.SAMPLING_RATE = 8000;
+        }
 
-		this.bytesPerSample = format.bitDepth ? format.bitDepth/8 : 2
+        this.freqs = [697, 770, 852, 941, 1209, 1336, 1477, 1633];
+        this.coefs = new Array(8).fill(0);
+        this.reset();
+        this.calcCoeffs();
 
-		this.float = format.float
-		this.signed = format.signed
+        this.eventEmitter = new EventEmitter();
+	this.curChar = ""
+	this.counter = 0
+    }
 
-		if(opts) {
-			this.numSamples = opts.numSamples ? opts.numSamples : 320
-		} else {
-			this.numSamples = 320
-		}
+    on(evt, cb) {
+        this.eventEmitter.on(evt, cb);
+    }
 
-		this.remains = null
+    reset() {
+        this.sampleIndex = 0;
+        this.sampleCount = 0;
+        this.q1 = new Array(8).fill(0);
+        this.q2 = new Array(8).fill(0);
+        this.r = new Array(8).fill(0);
+    }
 
-		this.previous = Array(16) // one slot for each DTMF tone
+    postTesting() {
+        const rowColAsciiCodes = [["1", "2", "3", "A"], ["4", "5", "6", "B"], ["7", "8", "9", "C"], ["*", "0", "#", "D"]];
+        let row = 0;
+        let col = 0;
+        let seeDigit = false;
+        let peakCount = 0;
+        let maxIndex = 0;
+        let maxVal = 0.0;
+        let t = 0;
+        
+        for (let i = 0; i < 4; i++) {
+            if (this.r[i] > maxVal) {
+                maxVal = this.r[i];
+                row = i;
+            }
+        }
 
-		this.eventEmitter = new EventEmitter()
-	}
+        col = 4;
+        maxVal = 0;
 
-	on(evt, cb) {
-		this.eventEmitter.on(evt, cb)
-	}
+        for (let i = 4; i < 8; i++) {
+            if (this.r[i] > maxVal) {
+                maxVal = this.r[i];
+                col = i;
+            }
+        }
 
-	_digitToSlot(d) {
-		switch(d){
-		case '*':
-			return 14
-		case '#':
-			return 15
-		case 'A':
-		case 'B':
-		case 'C':
-		case 'D':
-			return parseInt(d, 16)
-		default:
-			return parseInt(d, 10)
-		}
-	}
+        if (this.r[row] < 4.0e5 || this.r[col] < 4.0e5) {
+            return "energy not enough";
+        }
 
-	_slotToDigit(s) {
-		if(s < 10) {
-			return s + ''
-		} else if(s >=10 && s < 14) {
-			return String.fromCharCode(65 - 10 + s)
-		} else if(s == 14) {
-			return '*'
-		} else {
-			return '#'
-		}
-	}
+        seeDigit = true;
 
-	_processSamples(data) {
-		//console.log('_processSamples', data)
+        if (this.r[col] > this.r[row]) {
+            maxIndex = col;
+            if (this.r[row] < this.r[col] * 0.398) {
+                seeDigit = false;
+            }
+        } else {
+            maxIndex = row;
+            if (this.r[col] < this.r[row] * 0.158) {
+                seeDigit = false;
+            }
+        }
 
-		//var ab = createBuffer(data, 'int16 8000')
-		//console.log(ab)
+        if (this.r[maxIndex] > 1.0e9) {
+            t = this.r[maxIndex] * 0.158;
+        } else {
+            t = this.r[maxIndex] * 0.010;
+        }
 
-		var buffer = new Float32Array(this.numSamples)
+        peakCount = 0;
 
-		for(var i = 0 ; i<this.numSamples ; i++) {
-			var f
-			if(this.bytesPerSample == 1) {
-				f = data[i]
-			} else if (this.bytesPerSample == 2) {
-				f = data.readInt16LE(i*this.bytesPerSample)
-				if(f != 0) {
-					var LIMIT = 0.9999999999999999
-					f = (LIMIT - -LIMIT)/(32767 - -32768)*(f - 32767)+LIMIT
-				}
-			} else if (this.bytesPerSample == 4) {
-				if(this.float) {
-					f = data.readFloatLE(i*this.bytesPerSample)
-				} else {
-					f = data.readInt32LE(i*this.bytesPerSample)
-					if(f != 0) {
-						var LIMIT = 0.9999999999999999
-						f = (LIMIT - -LIMIT)/(2147483647 - -2147483648)*(f - 2147483647)+LIMIT
-					}
-				}
-			} else {
-				throw "NOT SUPPORTED"
-			}
-			buffer[i] = f
-		}
-		
-		//console.log(buffer)
-		//var digits = this.dtmf.processBuffer(ab.getChannelData(0))
-		var digits = this.dtmf.processBuffer(buffer)
-		//console.log(digits)
+        for (let i = 0; i < 8; i++) {
+            if (this.r[i] > t) {
+                peakCount++;
+            }
+        }
 
-		// report digits upon signal extinction
-		var slots = digits.map(digit => this._digitToSlot(digit))
-		//console.log('slots', slots)
-		var absentOnes = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15].filter(slot => slots.indexOf(slot) < 0)
-		//console.log('absentOnes', absentOnes)
-		absentOnes.forEach(slot => {
-			if(this.previous[slot]) {
-				this.eventEmitter.emit('digit', this._slotToDigit(slot))
-				this.previous[slot] = null
-			}
-		})
+        if (peakCount > 2) {
+            seeDigit = false;
+            //console.log("peak count is too high: ", peakCount);
+	    if(this.curChar && this.count >= MINIMAL_COUNT) {
+               this.eventEmitter.emit('digit', this.curChar);
+            }
+	    this.curChar = ""
+            this.count = 0
+        }
 
-		slots.forEach(slot => {
-			this.previous[slot] = true
-		})
-	}
+        if (seeDigit) {
+            //console.log(rowColAsciiCodes[row][col - 4]); // for debugging
+            const detectedChar = rowColAsciiCodes[row][col - 4];
+	    if(this.curChar == detectedChar) {
+              this.count++
+            } else {
+	      if(this.count >= MINIMAL_COUNT) {
+	        this.eventEmitter.emit('digit', this.curChar);
+	        this.curChar = ""
+	        this.count = 0
+	      }
+              this.curChar = detectedChar
+	      this.count++
+	    }
+        }
+    }
 
-	_write(chunk, encoding, callback) {
-		//console.log('_write', chunk)
-		var data = chunk
+    goertzel(sample) {
+        let q0 = 0;
+        this.sampleCount++;
+        this.sampleIndex++;
 
-		if(this.remains) {
-			data = Buffer.concat([this.remains, data])
-			this.remains = null
-		}
+        for (let i = 0; i < this.MAX_BINS; i++) {
+            q0 = this.coefs[i] * this.q1[i] - this.q2[i] + sample;
+            this.q2[i] = this.q1[i];
+            this.q1[i] = q0;
+        }
 
-		var numBytes = this.numSamples * this.bytesPerSample
+        if (this.sampleCount === this.GOERTZEL_N) {
+            for (let i = 0; i < this.MAX_BINS; i++) {
+                this.r[i] = this.q1[i] * this.q1[i] + this.q2[i] * this.q2[i] - this.coefs[i] * this.q1[i] * this.q2[i];
+                this.q1[i] = 0;
+                this.q2[i] = 0;
+            }
+            this.postTesting();
+            this.sampleCount = 0;
+        }
+    }
 
-		//console.log(data.length, numBytes)
-		if(data.length < numBytes) {
-			this.remains = data
-		} else if(data.length == numBytes) {
-			this._processSamples(data)
-		} else {
-			var blocks = Math.floor(data.length / numBytes)
-			//console.log('blocks', blocks)
-			//console.log("data.length", data.length)
-			//console.log(blocks * numBytes)
-			for(var i=0 ; i<blocks ; i++) {
-				this._processSamples(data.slice(i*numBytes, i*numBytes+numBytes))
-			}
-			var remaining = data.length - blocks*numBytes
-			if(remaining > 0) {
-				this.remains = data.slice(-remaining)
-			}
-		}
+    calcCoeffs() {
+        for (let n = 0; n < this.MAX_BINS; n++) {
+            this.coefs[n] = 2.0 * Math.cos(2.0 * Math.PI * this.freqs[n] / this.SAMPLING_RATE);
+        }
+    }
 
-		if(callback) callback(null)
-	}
+    _write(chunk, encoding, callback) {
+        //console.log("Processing chunk...", chunk);
+        const samples = new Int16Array(chunk.buffer);
+
+        for (const sample of samples) {
+            this.goertzel(sample);
+        }
+
+        //console.log("Chunk processed");
+        callback(); // Call the callback to indicate that the data has been processed
+    }
+
+    emitDigitIfEnded() {
+        // Emit the 'digit' event if the current character is not empty and the count is above the minimal threshold
+        if (this.curChar && this.count >= MINIMAL_COUNT) {
+            this.eventEmitter.emit('digit', this.curChar);
+            this.curChar = ""; // Reset the current character
+            this.count = 0; // Reset the count
+        }
+    }
 }
 
-module.exports = DtmfDetectionStream
+module.exports = DtmfDetectionStream;
 

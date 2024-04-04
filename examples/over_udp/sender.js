@@ -33,11 +33,13 @@ const format = {
 }
 
 const ts = new ToneStream(format)
+ts.add([1000, 's']) // initial silence
+
 for (var i = 0; i < dtmf_string.length; i++) {
 	var digit = dtmf_string.charAt(i)
 
 	ts.add([800, `DTMF:${digit}`])
-	ts.add([1000, 0]) // silence
+	ts.add([1000, 's']) // silence
 }
 
 const s = dgram.createSocket('udp4');

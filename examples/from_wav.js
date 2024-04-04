@@ -2,12 +2,6 @@ const fs = require('fs')
 const wav = require('wav')
 const DtmfDetectionStream = require('../index.js')
 
-const format = {
-	sampleRate: 8000,
-	bitDepth: 16,
-	channels: 1,
-}
-
 var file_path
 
 if(process.argv[2]) {
@@ -41,6 +35,10 @@ reader.on('format', format => {
 		console.log('got digit', digit)
 	})
 
-	reader.pipe(dds)
+	//reader.pipe(dds) // this doesn't work properly (sometimes we don't get the last digit as we dont get all data (not enough calls to our _write(chunk) method)
+	reader.on('data', data => {
+	    dds.write(data)
+	})
 })
+
 
