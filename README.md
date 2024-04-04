@@ -3,7 +3,7 @@
 This is is simple node.js DTMF detection stream.
 
 ```
-const ToneStream = require('tone-stream')
+const { ToneStream } = require('tone-stream')
 const DtmfDetectionStream = require('dtmf-detection-stream')
 
 const format = {
