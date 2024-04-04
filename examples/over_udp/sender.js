@@ -1,4 +1,4 @@
-const ToneStream = require('tone-stream')
+const { ToneStream } = require('tone-stream')
 const DtmfDetectionStream = require('../../index.js')
 const dgram = require('dgram')
 
