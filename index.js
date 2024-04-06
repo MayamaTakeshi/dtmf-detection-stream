@@ -116,7 +116,7 @@ class DtmfDetectionStream extends Writable {
             seeDigit = false;
             //console.log("peak count is too high: ", peakCount);
 	    if(this.curChar && this.count >= MINIMAL_COUNT) {
-               this.eventEmitter.emit('digit', this.curChar);
+		this.emitDtmf(this.curChar);
             }
 	    this.curChar = ""
             this.count = 0
@@ -129,7 +129,7 @@ class DtmfDetectionStream extends Writable {
               this.count++
             } else {
 	      if(this.count >= MINIMAL_COUNT) {
-	        this.eventEmitter.emit('digit', this.curChar);
+		this.emitDtmf(this.curChar);
 	        this.curChar = ""
 	        this.count = 0
 	      }
@@ -175,7 +175,7 @@ class DtmfDetectionStream extends Writable {
         if(this.channels == 1) {
 		channel1Samples = samples
 	} else {
-            // Iterate over the interleaved samples and extract samples from channel 1
+            // Iterate over the interleaved samples and extract samples from the first channel
 	    var channel1Index = 0
             for (let i = channel1Index; i < samples.length; i += this.channels) {
                 channel1Samples.push(samples[i]);
@@ -190,14 +190,11 @@ class DtmfDetectionStream extends Writable {
         callback(); // Call the callback to indicate that the data has been processed
     }
 
-    emitDigitIfEnded() {
-        // Emit the 'digit' event if the current character is not empty and the count is above the minimal threshold
-        if (this.curChar && this.count >= MINIMAL_COUNT) {
-            this.eventEmitter.emit('digit', this.curChar);
-            this.curChar = ""; // Reset the current character
-            this.count = 0; // Reset the count
-        }
+    emitDtmf(digit) {
+	const timestamp = parseFloat(this.sampleIndex) / parseFloat(this.SAMPLING_RATE);
+	this.eventEmitter.emit('dtmf', {digit, timestamp});
     }
+
 }
 
 module.exports = DtmfDetectionStream;

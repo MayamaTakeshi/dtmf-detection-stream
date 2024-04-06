@@ -25,8 +25,8 @@ const format = {
 
 const dds = new DtmfDetectionStream(format)
 
-dds.on('digit', digit => {
-	console.log('got digit', digit)
+dds.on('dtmf', data => {
+	console.log('Got', data)
 })
 
 const d = dgram.createSocket('udp4');

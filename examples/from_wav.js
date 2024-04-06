@@ -31,8 +31,8 @@ reader.on('format', format => {
 
 	const dds = new DtmfDetectionStream(format, null, dtmf_opts)
 
-	dds.on('digit', digit => {
-		console.log('got digit', digit)
+	dds.on('dtmf', data => {
+		console.log('Got', data)
 	})
 
 	//reader.pipe(dds) // this doesn't work properly (sometimes we don't get the last digit as we dont get all data (not enough calls to our _write(chunk) method)

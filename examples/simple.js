@@ -27,8 +27,8 @@ ts.on('empty', () => {
 
 const dds = new DtmfDetectionStream(format, {numSamples: 800})
 
-dds.on('digit', digit => {
-	console.log('got digit', digit)
+dds.on('dtmf', data => {
+	console.log('Got', data)
 })
 
 ts.pipe(dds)
