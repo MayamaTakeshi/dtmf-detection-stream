@@ -2,7 +2,7 @@
 
 This is is simple node.js DTMF detection stream.
 
-Sample usage:
+## Sample usage
 
 ```
 const { ToneStream } = require('tone-stream')
@@ -42,4 +42,9 @@ Got { digit: '1', timestamp: 0.207 }
 Got { digit: '2', timestamp: 0.4025 }
 Got { digit: '3', timestamp: 0.6095 }
 ```
+
+## More Examples
+
+See [here](https://github.com/MayamaTakeshi/dtmf-detection-stream/tree/master/examples).
+
 

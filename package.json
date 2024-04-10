@@ -1,14 +1,11 @@
 {
   "name": "dtmf-detection-stream",
-  "version": "1.11.0",
+  "version": "1.12.0",
   "description": "",
   "main": "index.js",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/MayamaTakeshi/dtmf-detection-stream.git"
-  },
-  "scripts": {
-    "test": "mocha"
   },
   "author": "MayamaTakeshi",
   "license": "MIT",
