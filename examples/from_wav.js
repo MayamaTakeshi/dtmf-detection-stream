@@ -21,15 +21,7 @@ file.pipe(reader)
 reader.on('format', format => {
 	console.log('format:', format)
 
-	const dtmf_opts = {
-		sampleRate: format.sampleRate,
-		peakFilterSensitivity: 0.5,
-		repeatMin: 1,
-		downsampleRate: 1,
-		threshold: 0.9,
-	}
-
-	const dds = new DtmfDetectionStream(format, null, dtmf_opts)
+	const dds = new DtmfDetectionStream({format})
 
 	dds.on('dtmf', data => {
 		console.log('Got', data)

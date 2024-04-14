@@ -4,9 +4,11 @@ const { EventEmitter } = require("events");
 const MINIMAL_COUNT = 2;
 
 class DtmfDetectionStream extends Writable {
-  constructor(format, opts) {
-    super(opts);
+  constructor(args) {
+    super();
     this.MAX_BINS = 8;
+
+    const format = args.format
 
     if (format.sampleRate == 8000) {
       // 8kHz default

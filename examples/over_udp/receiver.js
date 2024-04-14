@@ -23,7 +23,7 @@ const format = {
 	channels: 1,
 }
 
-const dds = new DtmfDetectionStream(format)
+const dds = new DtmfDetectionStream({format})
 
 dds.on('dtmf', data => {
 	console.log('Got', data)

@@ -25,7 +25,7 @@ ts.on('empty', () => {
 	ts.add([800, 's'])
 })
 
-const dds = new DtmfDetectionStream(format)
+const dds = new DtmfDetectionStream({format})
 
 dds.on('dtmf', data => {
 	console.log('Got', data)
