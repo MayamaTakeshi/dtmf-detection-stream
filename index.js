@@ -179,9 +179,12 @@ class DtmfDetectionStream extends Writable {
   }
 
   _write(chunk, encoding, callback) {
-    //console.log("Processing chunk...", chunk);
+    //console.log("Processing chunk.buffer...", chunk.buffer);
 
-    let samples = new Int16Array(chunk.buffer);
+    // we get a slice of the buffer (shared memory of original one)
+    // this is because some sources like ws (websocket) data in event message will have a buffer larger than the actual data
+    let samples = new Int16Array(chunk.buffer.slice(0, chunk.byteLength))
+    //console.log("samples", samples)
     let channel1Samples = [];
     if (this.channels == 1) {
       channel1Samples = samples;
