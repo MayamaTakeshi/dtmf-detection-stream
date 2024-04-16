@@ -7,7 +7,7 @@ const format = {
 	channels: 1,
 }
 
-var digits = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 'A', 'B', 'C', 'D', '*', '#']
+var digits = '0123456789abcdef'.split('')
 
 var temp_digits = digits.slice(0) // clone array
 

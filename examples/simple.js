@@ -1,29 +1,27 @@
-const { ToneStream } = require('tone-stream')
+// sending a new digit after after the previous one is detected.
+
+const { ToneStream, utils } = require('tone-stream')
 const DtmfDetectionStream = require('../index.js')
 
+const sampleRate = 8000
+
 const format = {
-	sampleRate: 8000,
+	sampleRate,
 	bitDepth: 16,
 	channels: 1,
 }
 
-var digits = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 'A', 'B', 'C', 'D', '*', '#']
-
 const ts = new ToneStream(format)
 
 ts.add([800, 's'])
-ts.add([800, `DTMF:${digits.shift()}`])
-ts.add([800, 's'])
-
-ts.on('empty', () => {
-	var digit = digits.shift()
-	if(!digit) {
-		return
-	}
-
-	ts.add([800, `DTMF:${digit}`])
-	ts.add([800, 's'])
+var tones = utils.gen_dtmf_tones("0123456789abcd*#", 100, 100, sampleRate)
+tones.push([800, 's'])
+console.log("tones:")
+tones.forEach(tone => {
+    console.log(tone)
 })
+
+ts.concat(tones)
 
 const dds = new DtmfDetectionStream({format})
 
