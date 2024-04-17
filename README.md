@@ -43,6 +43,12 @@ Got { digit: '2', timestamp: 0.4025 }
 Got { digit: '3', timestamp: 0.6095 }
 ```
 
+## Events
+
+The DtmfDetectionStream emits two kinds of events:
+  - 'dtmf': single digit as soon as it is detected (notified upon signal extintion)
+  - 'transcript': aggregated digits after 100 milliseconds with no more digits being detected.
+
 ## More Examples
 
 See [here](https://github.com/MayamaTakeshi/dtmf-detection-stream/tree/master/examples).

@@ -27,6 +27,11 @@ const dds = new DtmfDetectionStream({format})
 
 dds.on('dtmf', data => {
 	console.log('Got', data)
+
+  if(data.digit == '#') {
+    console.log("done")
+    process.exit(0)
+  }
 })
 
 ts.pipe(dds)

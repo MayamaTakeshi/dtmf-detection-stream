@@ -1,6 +1,6 @@
 {
   "name": "dtmf-detection-stream",
-  "version": "1.14.1",
+  "version": "1.15.0",
   "description": "",
   "main": "index.js",
   "repository": {
@@ -10,6 +10,7 @@
   "author": "MayamaTakeshi",
   "license": "MIT",
   "devDependencies": {
+    "dtmf-generation-stream": "^1.7.0",
     "speaker": "^0.5.1",
     "tone-stream": "^1.11.2",
     "wav": "^1.0.2"

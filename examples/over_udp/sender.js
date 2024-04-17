@@ -8,7 +8,7 @@ if(args.length != 6) {
 Invalid Number of arguments. 
 
 Parameters: local_ip remote_ip remote_port dtmf_string
-Ex:         127.0.0.1 127.0.0.1 8890 01234567890abcd#*
+Ex:         127.0.0.1 127.0.0.1 8890 01234567890abcd*#
 `)
 
 	process.exit(1)
@@ -21,7 +21,7 @@ const dtmf_string = process.argv[5]
 
 const re = /[0-9a-dA-D]+/
 if(!dtmf_string.match(re)) {
-	console.log('Invalid dtmf_string. Valid chars are 0123456789abcdef')	
+	console.log('Invalid dtmf_string. Valid chars are 0123456789abcd*#')	
 	process.exit(1)
 }
 

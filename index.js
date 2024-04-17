@@ -3,6 +3,10 @@ const { EventEmitter } = require("events");
 
 const MINIMAL_COUNT = 2;
 
+const AGGREGATION_TIMEOUT = 100;
+
+const TRANSCRIPT_LIMIT = 256;
+
 class DtmfDetectionStream extends Writable {
   constructor(args) {
     super();
@@ -41,6 +45,9 @@ class DtmfDetectionStream extends Writable {
     this.eventEmitter = new EventEmitter();
     this.curChar = "";
     this.counter = 0;
+
+    this.timeoutID = null
+    this.aggregated = ""
   }
 
   on(evt, cb) {
@@ -208,6 +215,28 @@ class DtmfDetectionStream extends Writable {
     const timestamp =
       parseFloat(this.sampleIndex) / parseFloat(this.SAMPLING_RATE);
     this.eventEmitter.emit("dtmf", { digit, timestamp });
+
+    this.aggregated += digit
+    //console.log("aggregated", this.aggregated)
+
+    if(this.timeoutID) {
+      console.log("clearing timeout")
+      clearTimeout(this.timeoutID)
+      this.timeoutID = null
+    }
+
+    if(this.aggregated.length >= TRANSCRIPT_LIMIT) {
+      this.eventEmitter.emit("speech", {transcript: this.aggregated, timestamp})
+      this.aggregated = ""
+      return
+    }
+
+    console.log("setting timeout")
+    this.timeoutID = setTimeout(() => {
+      this.eventEmitter.emit("speech", {transcript: this.aggregated, timestamp})
+      this.timeoutID = null
+      this.aggregated = ""
+    }, AGGREGATION_TIMEOUT)
   }
 }
 
