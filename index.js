@@ -3,7 +3,7 @@ const { EventEmitter } = require("events");
 
 const MINIMAL_COUNT = 2;
 
-const AGGREGATION_TIMEOUT = 100;
+const AGGREGATION_TIMEOUT = 500;
 
 const TRANSCRIPT_LIMIT = 256;
 
