@@ -23,7 +23,7 @@ ts.add([800, 's']) // silence
 ts.add([800, 'DTMF:3'])
 ts.add([800, 's']) // silence
 
-const dds = new DtmfDetectionStream(format)
+const dds = new DtmfDetectionStream({format})
 
 dds.on('dtmf', data => {
         console.log('Got', data)
