@@ -26,7 +26,11 @@ ts.add([800, 's']) // silence
 const dds = new DtmfDetectionStream({format})
 
 dds.on('dtmf', data => {
-        console.log('Got', data)
+        console.log('Got dtmf', data)
+})
+
+dds.on('speech', data => {
+        console.log('Got speech', data)
 })
 
 ts.on('data', data => {
@@ -46,8 +50,8 @@ Got { digit: '3', timestamp: 0.6095 }
 ## Events
 
 The DtmfDetectionStream emits two kinds of events:
-  - 'dtmf': single digit as soon as it is detected (notified upon signal extintion)
-  - 'transcript': aggregated digits after 500 milliseconds with no more digits being detected.
+  - 'dtmf': single digit as soon as it is detected (notified upon signal extintion).
+  - 'speech': aggregated digits after 500 milliseconds with no more digits being detected. So it will be like someone is using DTMF to talk (this will permit to treat dtmf-detection-stream as a speech-recog-stream and use it with mrcp_server and ws_speech_server).
 
 ## More Examples
 
