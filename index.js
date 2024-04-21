@@ -220,7 +220,7 @@ class DtmfDetectionStream extends Writable {
     //console.log("aggregated", this.aggregated)
 
     if(this.timeoutID) {
-      console.log("clearing timeout")
+      //console.log("clearing timeout")
       clearTimeout(this.timeoutID)
       this.timeoutID = null
     }
@@ -231,7 +231,7 @@ class DtmfDetectionStream extends Writable {
       return
     }
 
-    console.log("setting timeout")
+    //console.log("setting timeout")
     this.timeoutID = setTimeout(() => {
       this.eventEmitter.emit("speech", {transcript: this.aggregated, timestamp})
       this.timeoutID = null

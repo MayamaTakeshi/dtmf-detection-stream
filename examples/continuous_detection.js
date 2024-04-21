@@ -30,11 +30,11 @@ ts.on('empty', () => {
 const dds = new DtmfDetectionStream({format})
 
 dds.on('dtmf', data => {
-	console.log('Got dtmf', data)
+	console.log('Event dtmf:', data)
 })
 
 dds.on('speech', data => {
-  console.log('Got speech', data)
+  console.log('Event speech:', data)
 })
 
 ts.pipe(dds)

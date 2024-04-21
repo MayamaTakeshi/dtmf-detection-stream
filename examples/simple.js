@@ -26,7 +26,7 @@ ts.concat(tones)
 const dds = new DtmfDetectionStream({format})
 
 dds.on('dtmf', data => {
-	console.log('Got', data)
+	console.log('Event dtmf:', data)
 
   if(data.digit == '#') {
     console.log("done")

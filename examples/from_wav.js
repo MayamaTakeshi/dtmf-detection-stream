@@ -24,10 +24,10 @@ reader.on('format', format => {
 	const dds = new DtmfDetectionStream({format})
 
 	dds.on('dtmf', data => {
-		console.log('Got', data)
+		console.log('Event dtmf:', data)
 	})
 
-	//reader.pipe(dds) // this doesn't work properly (sometimes we don't get the last digit as we dont get all data (not enough calls to our _write(chunk) method)
+	//reader.pipe(dds) // piping doesn't work properly (sometimes we don't get the last digit as we dont get all data (not enough calls to our _write(chunk) method)
 	reader.on('data', data => {
 	    dds.write(data)
 	})

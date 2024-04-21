@@ -1,17 +1,24 @@
 # dtmf-detection-stream
 
-This is is simple node.js DTMF detection stream.
+This is a simple node.js DTMF detection stream.
+
+## Installation 
+
+```
+npm i dtmf-detection-stream
+```
 
 ## Sample usage
 
 ```
 const { ToneStream } = require('tone-stream')
+const Speaker = require('speaker')
 const DtmfDetectionStream = require('dtmf-detection-stream')
 
 const format = {
-        sampleRate: 8000,
-        bitDepth: 16,
-        channels: 1,
+  sampleRate: 8000,
+  bitDepth: 16,
+  channels: 1,
 }
 
 const ts = new ToneStream(format)
@@ -26,25 +33,31 @@ ts.add([800, 's']) // silence
 const dds = new DtmfDetectionStream({format})
 
 dds.on('dtmf', data => {
-        console.log('Got dtmf', data)
+  console.log('Got dtmf:', data)
 })
 
 dds.on('speech', data => {
-        console.log('Got speech', data)
+  console.log('Got speech:', data)
+  process.exit(0)     
 })
 
 ts.on('data', data => {
-        dds.write(data)
+  dds.write(data)
 })
+
+const speaker = new Speaker(format)
+ts.pipe(speaker)
 
 ```
 Output:
 
 ```
 $ node mytest.js 
-Got { digit: '1', timestamp: 0.207 }
-Got { digit: '2', timestamp: 0.4025 }
-Got { digit: '3', timestamp: 0.6095 }
+Got dtmf: { digit: '1', timestamp: 0.207 }
+Got dtmf: { digit: '2', timestamp: 0.4025 }
+Got dtmf: { digit: '3', timestamp: 0.6095 }
+Got speech: { transcript: '123', timestamp: 0.6095 }
+
 ```
 
 ## Events

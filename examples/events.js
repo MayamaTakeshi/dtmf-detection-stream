@@ -23,16 +23,12 @@ var intervalID = setInterval(() => {
 }, 20)
 
 dds.on('dtmf', data => {
-	console.log('Got', data)
+	console.log('Event dtmf:', data)
 })
 
 dds.on('speech', data => {
-	console.log('Got', data)
+	console.log('Event speech:', data)
   clearInterval(intervalID)
   console.log("done")
 })
 
-
-dgs.on('empty', () => {
-  console.log('empty')
-})
