@@ -27,10 +27,7 @@ reader.on('format', format => {
 		console.log('Event dtmf:', data)
 	})
 
-	//reader.pipe(dds) // piping doesn't work properly (sometimes we don't get the last digit as we dont get all data (not enough calls to our _write(chunk) method)
-	reader.on('data', data => {
-	    dds.write(data)
-	})
+	reader.pipe(dds) 
 })
 
 

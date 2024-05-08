@@ -9,17 +9,25 @@ const format = {
 	channels: 1,
 }
 
-const dgs = new DtmfGenerationStream({format})
-dgs.enqueue('0123456789')
+const params = {
+  text: '0123456789',
+}
+
+const dgs = new DtmfGenerationStream({format, params})
 
 const dds = new DtmfDetectionStream({format})
 
 var intervalID = setInterval(() => {
-  console.log("heartbeat")
+  //console.log("interval")
   var bytes = (sampleRate / 8000) * 320 * 20
   var data = dgs.read(bytes)
   //console.log(data)
-  dds.write(data)
+  if(data) {
+    dds.write(data)
+  } else {
+    console.log("done")
+    process.exit(0)
+  }
 }, 20)
 
 dds.on('dtmf', data => {
