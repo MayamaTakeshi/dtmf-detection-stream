@@ -1,7 +1,7 @@
 const DtmfDetectionStream = require('../index.js')
 const DtmfGenerationStream = require('dtmf-generation-stream')
 
-const sampleRate = 16000
+const sampleRate = 8000
 
 const format = {
 	sampleRate,
@@ -25,8 +25,10 @@ var intervalID = setInterval(() => {
   if(data) {
     dds.write(data)
   } else {
-    console.log("done")
-    process.exit(0)
+    setTimeout(() => {
+      console.log("done")
+      process.exit(0)
+    }, 1000)
   }
 }, 20)
 
@@ -37,6 +39,5 @@ dds.on('dtmf', data => {
 dds.on('speech', data => {
 	console.log('Event speech:', data)
   clearInterval(intervalID)
-  console.log("done")
 })
 
