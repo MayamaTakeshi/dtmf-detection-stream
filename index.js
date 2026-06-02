@@ -102,6 +102,11 @@ class DtmfDetectionStream extends Writable {
     }
 
     if (s.r[row] < 4.0e5 || s.r[col] < 4.0e5) {
+      if (s.curChar && s.count >= MINIMAL_COUNT) {
+        this.emitDtmf(ch, s.curChar);
+      }
+      s.curChar = "";
+      s.count = 0;
       return "energy not enough";
     }
 
