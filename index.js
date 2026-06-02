@@ -39,36 +39,43 @@ class DtmfDetectionStream extends Writable {
 
     this.freqs = [697, 770, 852, 941, 1209, 1336, 1477, 1633];
     this.coefs = new Array(8).fill(0);
-    this.reset();
     this.calcCoeffs();
 
-    this.eventEmitter = new EventEmitter();
-    this.curChar = "";
-    this.counter = 0;
+    // Initialize per-channel state
+    this.channelState = [];
+    for (let c = 0; c < this.channels; c++) {
+      this.channelState.push(this.createChannelState());
+    }
 
-    this.timeoutID = null
-    this.aggregated = ""
+    this.eventEmitter = new EventEmitter();
   }
 
   on(evt, cb) {
     this.eventEmitter.on(evt, cb);
   }
 
-  reset() {
-    this.sampleIndex = 0;
-    this.sampleCount = 0;
-    this.q1 = new Array(8).fill(0);
-    this.q2 = new Array(8).fill(0);
-    this.r = new Array(8).fill(0);
+  createChannelState() {
+    return {
+      sampleIndex: 0,
+      sampleCount: 0,
+      q1: new Array(8).fill(0),
+      q2: new Array(8).fill(0),
+      r: new Array(8).fill(0),
+      curChar: "",
+      count: 0,
+      timeoutID: null,
+      aggregated: "",
+    };
   }
 
-  postTesting() {
+  postTesting(ch) {
     const rowColAsciiCodes = [
       ["1", "2", "3", "a"],
       ["4", "5", "6", "b"],
       ["7", "8", "9", "c"],
       ["*", "0", "#", "d"],
     ];
+    const s = this.channelState[ch];
     let row = 0;
     let col = 0;
     let seeDigit = false;
@@ -78,8 +85,8 @@ class DtmfDetectionStream extends Writable {
     let t = 0;
 
     for (let i = 0; i < 4; i++) {
-      if (this.r[i] > maxVal) {
-        maxVal = this.r[i];
+      if (s.r[i] > maxVal) {
+        maxVal = s.r[i];
         row = i;
       }
     }
@@ -88,93 +95,92 @@ class DtmfDetectionStream extends Writable {
     maxVal = 0;
 
     for (let i = 4; i < 8; i++) {
-      if (this.r[i] > maxVal) {
-        maxVal = this.r[i];
+      if (s.r[i] > maxVal) {
+        maxVal = s.r[i];
         col = i;
       }
     }
 
-    if (this.r[row] < 4.0e5 || this.r[col] < 4.0e5) {
+    if (s.r[row] < 4.0e5 || s.r[col] < 4.0e5) {
       return "energy not enough";
     }
 
     seeDigit = true;
 
-    if (this.r[col] > this.r[row]) {
+    if (s.r[col] > s.r[row]) {
       maxIndex = col;
-      if (this.r[row] < this.r[col] * 0.398) {
+      if (s.r[row] < s.r[col] * 0.398) {
         seeDigit = false;
       }
     } else {
       maxIndex = row;
-      if (this.r[col] < this.r[row] * 0.158) {
+      if (s.r[col] < s.r[row] * 0.158) {
         seeDigit = false;
       }
     }
 
-    if (this.r[maxIndex] > 1.0e9) {
-      t = this.r[maxIndex] * 0.158;
+    if (s.r[maxIndex] > 1.0e9) {
+      t = s.r[maxIndex] * 0.158;
     } else {
-      t = this.r[maxIndex] * 0.01;
+      t = s.r[maxIndex] * 0.01;
     }
 
     peakCount = 0;
 
     for (let i = 0; i < 8; i++) {
-      if (this.r[i] > t) {
+      if (s.r[i] > t) {
         peakCount++;
       }
     }
 
     if (peakCount > 2) {
       seeDigit = false;
-      //console.log("peak count is too high: ", peakCount);
-      if (this.curChar && this.count >= MINIMAL_COUNT) {
-        this.emitDtmf(this.curChar);
+      if (s.curChar && s.count >= MINIMAL_COUNT) {
+        this.emitDtmf(ch, s.curChar);
       }
-      this.curChar = "";
-      this.count = 0;
+      s.curChar = "";
+      s.count = 0;
     }
 
     if (seeDigit) {
-      //console.log(rowColAsciiCodes[row][col - 4]); // for debugging
       const detectedChar = rowColAsciiCodes[row][col - 4];
-      if (this.curChar == detectedChar) {
-        this.count++;
+      if (s.curChar == detectedChar) {
+        s.count++;
       } else {
-        if (this.count >= MINIMAL_COUNT) {
-          this.emitDtmf(this.curChar);
-          this.curChar = "";
-          this.count = 0;
+        if (s.count >= MINIMAL_COUNT) {
+          this.emitDtmf(ch, s.curChar);
+          s.curChar = "";
+          s.count = 0;
         }
-        this.curChar = detectedChar;
-        this.count++;
+        s.curChar = detectedChar;
+        s.count++;
       }
     }
   }
 
-  goertzel(sample) {
+  goertzel(ch, sample) {
+    const s = this.channelState[ch];
     let q0 = 0;
-    this.sampleCount++;
-    this.sampleIndex++;
+    s.sampleCount++;
+    s.sampleIndex++;
 
     for (let i = 0; i < this.MAX_BINS; i++) {
-      q0 = this.coefs[i] * this.q1[i] - this.q2[i] + sample;
-      this.q2[i] = this.q1[i];
-      this.q1[i] = q0;
+      q0 = this.coefs[i] * s.q1[i] - s.q2[i] + sample;
+      s.q2[i] = s.q1[i];
+      s.q1[i] = q0;
     }
 
-    if (this.sampleCount === this.GOERTZEL_N) {
+    if (s.sampleCount === this.GOERTZEL_N) {
       for (let i = 0; i < this.MAX_BINS; i++) {
-        this.r[i] =
-          this.q1[i] * this.q1[i] +
-          this.q2[i] * this.q2[i] -
-          this.coefs[i] * this.q1[i] * this.q2[i];
-        this.q1[i] = 0;
-        this.q2[i] = 0;
+        s.r[i] =
+          s.q1[i] * s.q1[i] +
+          s.q2[i] * s.q2[i] -
+          this.coefs[i] * s.q1[i] * s.q2[i];
+        s.q1[i] = 0;
+        s.q2[i] = 0;
       }
-      this.postTesting();
-      this.sampleCount = 0;
+      this.postTesting(ch);
+      s.sampleCount = 0;
     }
   }
 
@@ -186,57 +192,40 @@ class DtmfDetectionStream extends Writable {
   }
 
   _write(chunk, encoding, callback) {
-    //console.log("Processing chunk.buffer...", chunk.buffer);
+    let samples = new Int16Array(chunk.buffer, chunk.byteOffset, chunk.byteLength / 2)
 
-    // we get a slice of the buffer (shared memory of original one)
-    // this is because some sources like ws (websocket) data in event message will have a buffer larger than the actual data
-    let samples = new Int16Array(chunk.buffer.slice(0, chunk.byteLength))
-    //console.log("samples", samples)
-    let channel1Samples = [];
-    if (this.channels == 1) {
-      channel1Samples = samples;
-    } else {
-      // Iterate over the interleaved samples and extract samples from the first channel
-      var channel1Index = 0;
-      for (let i = channel1Index; i < samples.length; i += this.channels) {
-        channel1Samples.push(samples[i]);
-      }
+    for (let i = 0; i < samples.length; i++) {
+      const ch = i % this.channels;
+      this.goertzel(ch, samples[i]);
     }
 
-    for (const sample of channel1Samples) {
-      this.goertzel(sample);
-    }
-
-    //console.log("Chunk processed");
-    callback(); // Call the callback to indicate that the data has been processed
+    callback();
   }
 
-  emitDtmf(digit) {
-    const timestamp =
-      parseFloat(this.sampleIndex) / parseFloat(this.SAMPLING_RATE);
-    this.eventEmitter.emit("dtmf", { digit, timestamp });
+  emitDtmf(ch, digit) {
+    const s = this.channelState[ch];
+    const timestamp = parseFloat(s.sampleIndex) / parseFloat(this.SAMPLING_RATE);
+    const channel = this.channels > 1 ? ch : undefined;
+    this.eventEmitter.emit("dtmf", { digit, timestamp, ...(channel !== undefined && { channel }) });
 
-    this.aggregated += digit
-    //console.log("aggregated", this.aggregated)
+    s.aggregated += digit;
 
-    if(this.timeoutID) {
-      //console.log("clearing timeout")
-      clearTimeout(this.timeoutID)
-      this.timeoutID = null
+    if (s.timeoutID) {
+      clearTimeout(s.timeoutID);
+      s.timeoutID = null;
     }
 
-    if(this.aggregated.length >= TRANSCRIPT_LIMIT) {
-      this.eventEmitter.emit("speech", {transcript: this.aggregated, timestamp})
-      this.aggregated = ""
-      return
+    if (s.aggregated.length >= TRANSCRIPT_LIMIT) {
+      this.eventEmitter.emit("speech", { transcript: s.aggregated, timestamp, ...(channel !== undefined && { channel }) });
+      s.aggregated = "";
+      return;
     }
 
-    //console.log("setting timeout")
-    this.timeoutID = setTimeout(() => {
-      this.eventEmitter.emit("speech", {transcript: this.aggregated, timestamp})
-      this.timeoutID = null
-      this.aggregated = ""
-    }, AGGREGATION_TIMEOUT)
+    s.timeoutID = setTimeout(() => {
+      this.eventEmitter.emit("speech", { transcript: s.aggregated, timestamp, ...(channel !== undefined && { channel }) });
+      s.timeoutID = null;
+      s.aggregated = "";
+    }, AGGREGATION_TIMEOUT);
   }
 }
 

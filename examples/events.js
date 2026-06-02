@@ -19,7 +19,7 @@ const dds = new DtmfDetectionStream({format})
 
 var intervalID = setInterval(() => {
   //console.log("interval")
-  var bytes = (sampleRate / 8000) * 320 * 20
+  var bytes = (sampleRate / 8000) * 320
   var data = dgs.read(bytes)
   //console.log(data)
   if(data) {
