@@ -191,6 +191,16 @@ class DtmfDetectionStream extends Writable {
     }
   }
 
+  _final(callback) {
+    for (let ch = 0; ch < this.channels; ch++) {
+      const s = this.channelState[ch];
+      if (s.curChar && s.count >= MINIMAL_COUNT) {
+        this.emitDtmf(ch, s.curChar);
+      }
+    }
+    callback();
+  }
+
   _write(chunk, encoding, callback) {
     let samples = new Int16Array(chunk.buffer, chunk.byteOffset, chunk.byteLength / 2)
 
